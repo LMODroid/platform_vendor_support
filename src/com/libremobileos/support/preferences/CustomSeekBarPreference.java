@@ -47,7 +47,6 @@ public class CustomSeekBarPreference extends Preference implements SeekBar.OnSee
 
     protected int mMinValue = 0;
     protected int mMaxValue = 100;
-    protected boolean mDefaultValueExists = false;
     protected int mDefaultValue;
 
     protected int mValue;
@@ -95,14 +94,6 @@ public class CustomSeekBarPreference extends Preference implements SeekBar.OnSee
         mMaxValue = attrs.getAttributeIntValue(ANDROIDNS, "max", mMaxValue);
         if (mMaxValue < mMinValue)
             mMaxValue = mMinValue;
-        String defaultValue = attrs.getAttributeValue(ANDROIDNS, "defaultValue");
-        mDefaultValueExists = defaultValue != null && !defaultValue.isEmpty();
-        if (mDefaultValueExists) {
-            mDefaultValue = getLimitedValue(Integer.parseInt(defaultValue));
-            mValue = mDefaultValue;
-        } else {
-            mValue = mMinValue;
-        }
 
         mSeekBar = new SeekBar(context, attrs);
         setLayoutResource(R.layout.preference_custom_seekbar);
@@ -179,7 +170,7 @@ public class CustomSeekBarPreference extends Preference implements SeekBar.OnSee
     protected void updateValueViews() {
         if (mValueTextView != null) {
             String add = "";
-            if (mDefaultValueExists && mValue == mDefaultValue) {
+            if (mValue == mDefaultValue) {
                 add = " (" + getContext().getString(
                         R.string.custom_seekbar_default_value) + ")";
             }
@@ -192,7 +183,7 @@ public class CustomSeekBarPreference extends Preference implements SeekBar.OnSee
         }
 
         if (mResetImageView != null) {
-            if (!mDefaultValueExists || mValue == mDefaultValue || mTrackingTouch)
+            if (mValue == mDefaultValue || mTrackingTouch)
                 mResetImageView.setVisibility(View.INVISIBLE);
             else
                 mResetImageView.setVisibility(View.VISIBLE);
@@ -295,40 +286,28 @@ public class CustomSeekBarPreference extends Preference implements SeekBar.OnSee
         return true;
     }
 
-    // dont need too much shit about initial and default values
-    // its all done in constructor already
+    @Override
+    protected Object onGetDefaultValue(TypedArray ta, int index) {
+        mDefaultValue = ta.getInt(index, mMinValue);
+        return mDefaultValue;
+    }
 
     @Override
-    protected void onSetInitialValue(boolean restoreValue, Object defaultValue) {
-        if (restoreValue)
-            mValue = getPersistedInt(mValue);
+    protected void onSetInitialValue(boolean restorePersistedValue, Object defaultValue) {
+        mValue = getPersistedInt(mDefaultValue);
     }
 
     @Override
     public void setDefaultValue(Object defaultValue) {
-        if (defaultValue instanceof Integer)
-            setDefaultValue((Integer) defaultValue, mSeekBar != null);
-        else
-            setDefaultValue(defaultValue == null ? (String) null : defaultValue.toString(), mSeekBar != null);
+        setDefaultValue((Integer) defaultValue, mSeekBar != null);
     }
 
     public void setDefaultValue(int newValue, boolean update) {
         newValue = getLimitedValue(newValue);
-        if (!mDefaultValueExists || mDefaultValue != newValue) {
-            mDefaultValueExists = true;
+        if (mDefaultValue != newValue) {
             mDefaultValue = newValue;
             if (update)
                 updateValueViews();
-        }
-    }
-
-    public void setDefaultValue(String newValue, boolean update) {
-        if (mDefaultValueExists && (newValue == null || newValue.isEmpty())) {
-            mDefaultValueExists = false;
-            if (update)
-                updateValueViews();
-        } else if (newValue != null && !newValue.isEmpty()) {
-            setDefaultValue(Integer.parseInt(newValue), update);
         }
     }
 
