@@ -93,6 +93,7 @@ public class ConstraintsHelper {
     public void setAvailable(boolean available) {
         mAvailable = available;
         if (!available) {
+            mPref.setVisible(false);
             Graveyard.get(mContext).addTombstone(mPref.getKey());
         }
     }
